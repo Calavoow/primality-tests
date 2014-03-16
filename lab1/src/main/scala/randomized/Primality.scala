@@ -7,15 +7,21 @@ object Primality {
   case object ProbablyPrime extends Outcomes
   case class Composite(certificate: Int) extends Outcomes
 
+  /**
+   * Using the Solovay-Strassen algorithm, try to find out whether n is a Prime or a Composite.
+   *
+   * @param n
+   * @return
+   */
   def solovayStrassen(n : Int) : Outcomes = {
     if(n % 2 == 0) Composite(2)
     else {
       val a = Random.nextInt(n-2) + 2 // a in [2,n-1]
       if(gcd(a,n) != 1) Composite(a)
       else{
-        val unroundedpow = powMod(a, (n-1)/2, n)
-        assert(!unroundedpow.isNaN, "Input too large")
-        val pow = unroundedpow.toInt
+        val unroundedPow = powMod(a, (n-1)/2, n)
+        assert(!unroundedPow.isNaN, "Input too large")
+        val pow = unroundedPow.toInt
 
         val jac = (jacobi(a,n) + n) % n // Make sure to modulo it to a positive number (in case it's -1)
         if(jac == pow) ProbablyPrime
@@ -24,6 +30,13 @@ object Primality {
     }
   }
 
+  /**
+   * Calculate the greatest common divisor.
+   *
+   * @param a
+   * @param b
+   * @return
+   */
   def gcd(a: Int, b: Int): Int = if (b == 0) a.abs else gcd(b, a % b)
 
   /**
@@ -38,14 +51,20 @@ object Primality {
    * @return The number raised to the power, with the given modulus.
    */
   def powMod(base: Double, pow: Double, mod: Int) : Double = powMod(base, pow, mod, 1)
+
+  /**
+   * Tail recursive implementation of the powMod function.
+   */
   private def powMod(base: Double, pow: Double, mod: Int, accum: Double) : Double = {
     pow match {
       case 0 => accum
-      case _ => powMod(base, pow-1, mod, (base * accum % mod))
+      case _ => powMod(base, pow-1, mod, (base * accum) % mod)
     }
   }
 
   /**
+   * Calculate the Jacobi symbol.
+   *
    * TODO: Maybe find a better source?
    * http://cryptocode.wordpress.com/2008/08/16/jacobi-symbol/
    *
