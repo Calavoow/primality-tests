@@ -9,12 +9,29 @@ object Primality {
   case class Composite(certificate: Int) extends Outcomes
 
   /**
+   * Try k iterations of a given test with appropriately ranged
+   * random values
+   */
+  def test(n: Int, k: Int = 100, f: Int => Outcomes): Outcomes = {
+    assert(k>0, "You should atleast run the primality test once...")
+
+    // see if we can find a certificate of compositeness
+    for(i <- Range(0, k)) {
+      f(n) match {
+        case c:Composite => return c
+        case _ =>
+      }
+    }
+
+    // if the loop did not find any counter examples
+    Primality.ProbablyPrime
+  }
+
+  /**
    * Using the Solovay-Strassen algorithm, try to find out whether n is a Prime or a Composite.
    *
-   * @param n
-   * @return
    */
-  def solovayStrassen(n : Int) : Outcomes = {
+  def solovayStrassenTest(n : Int) : Outcomes = {
     if(n % 2 == 0) Composite(2)
     else {
       // TODO: fails for n < 3
@@ -33,53 +50,34 @@ object Primality {
   }
 
   /**
-   * Try k iterations of the miller test with appropriately ranged
-   * random values
-   *
-   * TODO fails for n < 4
-   */
-  def millerRabin(n: Int, k: Int = 100): Outcomes = {
-    if(n % 2 == 0) Composite(2)
-    else {
-      // see if we can found a certificate of compositeness
-      for(i <- Range(1, k)) {
-        val a = Random.nextInt(n-3) + 2 // random in range [2, n-2]
-
-        millerRabinTest(n, a) match {
-          case c:Composite => return c
-          case _ =>
-        }
-      }
-
-      // if the loop did not find any counter examples
-      Primality.ProbablyPrime
-    }
-  }
-
-  /**
-   * Test if presumably randomly chosen a can be used to find a
+   * Test if randomly chosen a can be used to find a
    * proof that n is composite
    */
-  def millerRabinTest(n: Int, a: Int): Outcomes = {
-    // factor n as 2^s*d
-    val (s, d) = millerRabinFactors(n-1)
-    var x = powMod(a, d, n).toInt
+  def millerRabinTest(n: Int): Outcomes = {
+    if(n % 2 == 0) Composite(2)
+    else {
+      val a = Random.nextInt(n-3) + 2 // random in range [2, n-2]
 
-    if(x == 1 || x == n - 1) {
-      ProbablyPrime
-    } else {
-      // try s - 1 times
-      for(i <- Range(1, s)) {
-        x = powMod(x, 2, n).toInt
+      // factor n as 2^s*d
+      val (s, d) = millerRabinFactors(n-1)
+      var x = powMod(a, d, n).toInt
 
-        // we might find proof
-        if(x == 1) return Composite(a)
-        // we might run out of tries
-        else if(x == n-1) return ProbablyPrime
-        // else try next
+      if(x == 1 || x == n - 1) {
+        ProbablyPrime
+      } else {
+        // try s - 1 times
+        for(i <- Range(1, s)) {
+          x = powMod(x, 2, n).toInt
+
+          // we might find proof
+          if(x == 1) return Composite(a)
+          // we might run out of tries
+          else if(x == n-1) return ProbablyPrime
+          // else try next
+        }
+
+        Composite(a)
       }
-
-      Composite(a)
     }
   }
 
