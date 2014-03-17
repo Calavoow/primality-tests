@@ -56,7 +56,7 @@ object Primality {
   def millerRabinTest(n: Int): Outcome = {
     if(n % 2 == 0) Composite(2)
     else {
-      val a = Random.nextInt(n-3) + 2 // random in range [2, n-2]
+      val a = Random.nextInt(n-2) + 2 // random in range [2, n-2]
 
       // factor n as 2^s*d
       val (s, d) = millerRabinFactors(n-1)
