@@ -1,9 +1,18 @@
 import randomized.Primality
 
-object Main{
+object Main {
 
-  def main(args: Array[String]){
-    println("Hello world!")
-    for(i<- 1 to 50) println(Primality.solovayStrassen(4909))
+  import randomized.Primality.{ProbablyPrime, Composite}
+
+  def main(args: Array[String]) {
+    for(i<- 4 to 4000) {
+      val s = Primality.solovayStrassen(i)
+      val m = Primality.millerRabin(i)
+      (s,m) match {
+        case (ProbablyPrime, Composite(i)) => println("Strassen was wrong..")
+        case (Composite(i), ProbablyPrime) => println("Miller was wrong..")
+        case _ =>
+      }
+    }
   }
 }

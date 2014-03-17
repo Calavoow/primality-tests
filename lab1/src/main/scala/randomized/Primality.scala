@@ -1,6 +1,7 @@
 package randomized
 
 import scala.util.Random
+import scala.annotation.tailrec
 
 object Primality {
   sealed trait Outcomes
@@ -16,6 +17,7 @@ object Primality {
   def solovayStrassen(n : Int) : Outcomes = {
     if(n % 2 == 0) Composite(2)
     else {
+      // TODO: fails for n < 3
       val a = Random.nextInt(n-2) + 2 // a in [2,n-1]
       if(gcd(a,n) != 1) Composite(a)
       else{
@@ -31,12 +33,76 @@ object Primality {
   }
 
   /**
+   * Try k iterations of the miller test with appropriately ranged
+   * random values
+   *
+   * TODO fails for n < 4
+   */
+  def millerRabin(n: Int, k: Int = 100): Outcomes = {
+    if(n % 2 == 0) Composite(2)
+    else {
+      // see if we can found a certificate of compositeness
+      for(i <- Range(1, k)) {
+        val a = Random.nextInt(n-3) + 2 // random in range [2, n-2]
+
+        millerRabinTest(n, a) match {
+          case c:Composite => return c
+          case _ =>
+        }
+      }
+
+      // if the loop did not find any counter examples
+      Primality.ProbablyPrime
+    }
+  }
+
+  /**
+   * Test if presumably randomly chosen a can be used to find a
+   * proof that n is composite
+   */
+  def millerRabinTest(n: Int, a: Int): Outcomes = {
+    // factor n as 2^s*d
+    val (s, d) = millerRabinFactors(n-1)
+    var x = powMod(a, d, n).toInt
+
+    if(x == 1 || x == n - 1) {
+      ProbablyPrime
+    } else {
+      // try s - 1 times
+      for(i <- Range(1, s)) {
+        x = powMod(x, 2, n).toInt
+
+        // we might find proof
+        if(x == 1) return Composite(a)
+        // we might run out of tries
+        else if(x == n-1) return ProbablyPrime
+        // else try next
+      }
+
+      Composite(a)
+    }
+  }
+
+  def millerRabinFactors(n: Int): (Int, Int) = {
+    @tailrec
+    def rec_factor(k: Int, s: Int): (Int,Int) = {
+      // if k is uneven we're done
+      if(k % 2 == 1) (s, k)
+      // else we factor out a 2, and recurse
+      else rec_factor(k/2, s+1)
+    }
+
+    rec_factor(n,0)
+  }
+
+  /**
    * Calculate the greatest common divisor.
    *
    * @param a
    * @param b
    * @return
    */
+  @tailrec
   def gcd(a: Int, b: Int): Int = if (b == 0) a.abs else gcd(b, a % b)
 
   /**
@@ -50,21 +116,21 @@ object Primality {
    * @param mod The modulus to use.
    * @return The number raised to the power, with the given modulus.
    */
-  def powMod(base: Double, pow: Double, mod: Int) : Double = powMod(base, pow, mod, 1)
-
-  /**
-   * Tail recursive implementation of the powMod function.
-   */
-  private def powMod(base: Double, pow: Double, mod: Int, accum: Double) : Double = {
-    pow match {
-      case 0 => accum
-      case _ => powMod(base, pow-1, mod, (base * accum) % mod)
+  def powMod(base: Double, pow: Double, mod: Int) : Double = {
+    @tailrec
+    def powMod(base: Double, pow: Double, mod: Int, accum: Double) : Double = {
+      pow match {
+        case 0 => accum
+        case _ => powMod(base, pow-1, mod, (base * accum) % mod)
+      }
     }
+
+    powMod(base, pow, mod, 1)
   }
 
   /**
    * Calculate the Jacobi symbol.
-   *
+   *    ing time of this algorithm is O(k log3n), where k is the number of different values of a that we test; thus this is an efficient, polynomial-time algorithm. FFT-based multiplication can push the running time down to O(k log2n log log n log log log n) = Õ(k log2n).
    * TODO: Maybe find a better source?
    * http://cryptocode.wordpress.com/2008/08/16/jacobi-symbol/
    *
