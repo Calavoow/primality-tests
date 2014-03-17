@@ -3,10 +3,88 @@ package randomized
 import scala.util.Random
 import scala.annotation.tailrec
 
+object AKS {
+
+  import Primality.{Outcome, Prime, ProbablyPrime, Composite, powMod, gcd}
+
+  def log2(n: Int): Double = Math.log(n)/Math.log(2)
+
+  def apply(n: Int): Outcome = {
+    test_int_powers(n) &
+    test_smallest_order(n)
+  }
+
+  def test_smallest_order(n: Int): Outcome = {
+    val r = find_smallest_order(n)
+    for(i <- Range(r,1,-1)) {
+      val d = gcd(r,n)
+      if(d > 1 && d < n) return Composite
+    }
+
+    if(n<r) return Prime
+
+    ProbablyPrime
+  }
+
+  def totient(n: Int): Int = {
+    (1 until n).count(gcd(n, _) == 1)
+  }
+
+  def find_smallest_order(n: Int): Int = {
+    def find_r(r: Int): Int = {
+      val order = multiplicative_order(n, r)
+      if(order > Math.pow(log2(n), 2).toInt) r
+      else find_r(r+1)
+    }
+
+    find_r(2)
+  }
+
+  /**
+   * TODO guard against infinite looping with maxk
+   */
+  def multiplicative_order(n: Int, r: Int): Int = {
+    @tailrec
+    def calc(k: Int): Int = {
+      val done = powMod(n, k, r).toInt
+      if(done == 1 || done == 0) k
+      else calc(k+1)
+    }
+
+    calc(1)
+  }
+
+  /**
+   * Test
+   * @param n
+   * @return
+   */
+  def test_int_powers(n: Int): Outcome = {
+    for(b <- Range(2, log2(n).toInt)) {
+      if(Math.pow(n, 1/b).isValidInt) return Composite
+    }
+    
+    ProbablyPrime
+  }
+}
+  
+
 object Primality {
-  sealed trait Outcome
+  sealed trait Outcome {
+    /**
+     * You might want to do multiple tests.
+     * This operator helps you combine test results for singled sided error outcomes on primality tests,
+     */
+    def &(right: => Outcome) = this match {
+      case ProbablyPrime => right
+      case Composite => this
+      case Prime => this
+    }
+  }
+
   case object ProbablyPrime extends Outcome
-  case class Composite(certificate: Int) extends Outcome
+  case object Composite extends Outcome
+  case object Prime extends Outcome
 
   /**
    * Try k iterations of a given test with appropriately ranged
@@ -18,7 +96,7 @@ object Primality {
     // see if we can find a certificate of compositeness
     for(i <- Range(0, k)) {
       f(n) match {
-        case c:Composite => return c
+        case c@Composite => return c
         case _ =>
       }
     }
@@ -32,11 +110,11 @@ object Primality {
    *
    */
   def solovayStrassenTest(n : Int) : Outcome = {
-    if(n % 2 == 0) Composite(2)
+    if(n % 2 == 0) Composite
     else {
       // TODO: fails for n < 3
       val a = Random.nextInt(n-2) + 2 // a in [2,n-1]
-      if(gcd(a,n) != 1) Composite(a)
+      if(gcd(a,n) != 1) Composite
       else{
         val unroundedPow = powMod(a, (n-1)/2, n)
         assert(!unroundedPow.isNaN, "Input too large")
@@ -44,7 +122,7 @@ object Primality {
 
         val jac = (jacobi(a,n) + n) % n // Make sure to modulo it to a positive number (in case it's -1)
         if(jac == pow) ProbablyPrime
-        else Composite(a)
+        else Composite
       }
     }
   }
@@ -54,7 +132,7 @@ object Primality {
    * proof that n is composite
    */
   def millerRabinTest(n: Int): Outcome = {
-    if(n % 2 == 0) Composite(2)
+    if(n % 2 == 0) Composite
     else {
       val a = Random.nextInt(n-2) + 2 // random in range [2, n-2]
 
@@ -70,13 +148,13 @@ object Primality {
           x = powMod(x, 2, n).toInt
 
           // we might find proof
-          if(x == 1) return Composite(a)
+          if(x == 1) return Composite
           // we might run out of tries
           else if(x == n-1) return ProbablyPrime
           // else try next
         }
 
-        Composite(a)
+        Composite
       }
     }
   }
@@ -107,7 +185,7 @@ object Primality {
    * Raise a number to the power, using module every multiplication.
    *
    * This can be used to prevent numbers from becoming too big (NaN for doubles).
-   * Example: b^p % m becomes powMod(b,p,m)
+   * Example: b**p % m becomes powMod(b,p,m)
    *
    * @param base The base of the power
    * @param pow The power to raise the base to
