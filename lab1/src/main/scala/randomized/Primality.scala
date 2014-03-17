@@ -4,15 +4,15 @@ import scala.util.Random
 import scala.annotation.tailrec
 
 object Primality {
-  sealed trait Outcomes
-  case object ProbablyPrime extends Outcomes
-  case class Composite(certificate: Int) extends Outcomes
+  sealed trait Outcome
+  case object ProbablyPrime extends Outcome
+  case class Composite(certificate: Int) extends Outcome
 
   /**
    * Try k iterations of a given test with appropriately ranged
    * random values
    */
-  def test(n: Int, k: Int = 100, f: Int => Outcomes): Outcomes = {
+  def test(n: Int, k: Int = 100, f: Int => Outcome): Outcome = {
     assert(k>0, "You should atleast run the primality test once...")
 
     // see if we can find a certificate of compositeness
@@ -31,7 +31,7 @@ object Primality {
    * Using the Solovay-Strassen algorithm, try to find out whether n is a Prime or a Composite.
    *
    */
-  def solovayStrassenTest(n : Int) : Outcomes = {
+  def solovayStrassenTest(n : Int) : Outcome = {
     if(n % 2 == 0) Composite(2)
     else {
       // TODO: fails for n < 3
@@ -53,7 +53,7 @@ object Primality {
    * Test if randomly chosen a can be used to find a
    * proof that n is composite
    */
-  def millerRabinTest(n: Int): Outcomes = {
+  def millerRabinTest(n: Int): Outcome = {
     if(n % 2 == 0) Composite(2)
     else {
       val a = Random.nextInt(n-3) + 2 // random in range [2, n-2]
