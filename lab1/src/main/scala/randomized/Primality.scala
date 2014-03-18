@@ -66,7 +66,7 @@ object AKS {
 
   def test_smallest_order(n: Int, r: Int): Outcome = {
     for(i <- Range(r,1,-1)) {
-      val d = gcd(r,n)
+      val d = gcd(i,n)
       if(d > 1 && d < n) {
         Logger.info("Smallest order test says: composite!")
         return Composite
@@ -102,8 +102,9 @@ object AKS {
   }
 
   def find_smallest_order(n: Int): Int = {
+    @tailrec
     def find_r(r: Int): Int = {
-      if(gcd(n,r) == 1 && multiplicative_order(n, r) > Math.pow(log2(n), 2).toInt) r
+      if(gcd(n,r) == 1 && multiplicative_order(n, r) > Math.pow(log2(n), 2)) r
       else find_r(r+1)
     }
 
