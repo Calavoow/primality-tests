@@ -67,20 +67,20 @@ object AKS {
   def log2(n: Int): Double = Math.log(n)/Math.log(2)
 
   def test_smallest_order(n: Int, r: Int): Option[Outcome] = {
-    for(i <- Range(r,1,-1)) {
+    Range(r,1,-1).find {_ =>
       val d = gcd(r,n)
-      if(d > 1 && d < n) {
-        Logger.info("Smallest order test says: composite!")
-        return Some(Composite)
+      d > 1 && d < n
+    }.flatMap { _ =>  // If it found something, return Composite. Step 3
+      Logger.info("Smallest order test says: Composite!")
+      Some(Composite)
+    }.orElse {
+      if(n<r){ // Step 4. Should this be part of the smallest order test?
+        Logger.info("Smallest order test says: prime!")
+        Some(Prime)
+      } else { // If it hasn't found anything, return None
+        None
       }
     }
-
-    if(n<r) {
-      Logger.info("Smallest order test says: prime!")
-      return Some(Prime)
-    }
-
-    None // No outcome
   }
 
   def test_poly(n: Int, r: Int): Option[Outcome] = {
