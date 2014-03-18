@@ -50,7 +50,7 @@ object Testing {
         ).toMap
     }
 
-    val runs = 100
+    val runs = 10
     println(s"Testing runtime $runs times for logarithmically scaled inputs between 10^(0.5) to 10^6")
     val solovayResults = calcRunTime(solovayStrassenTest, runs)
     println(s"Solovay runTimes: $solovayResults")
@@ -58,7 +58,6 @@ object Testing {
     println(s"Miller runTimes: $millerResults")
     val aksResults = calcRunTime(AKS.apply _, runs)
     println(s"AKS runTimes: $aksResults")
-
 
     // Write results to CSV
     val resultWriter = new PrintWriter(new File("src/main/resources/runtimeResults.csv"))
@@ -106,6 +105,7 @@ object Testing {
    */
   def timeAlgo(input: Int, algo: Int => Outcome, times: Int): Seq[Long] = {
     for (i <- 1 to times) yield {
+      print(".")
       val startTime = System.nanoTime
       algo(input)
       System.nanoTime - startTime

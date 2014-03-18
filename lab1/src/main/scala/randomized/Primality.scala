@@ -62,7 +62,7 @@ object AKS {
     val divider = Polynomial((-1 +: Seq.fill(r-1)(0) :+ 1).toArray)
 
     for(a <- 1 until max) {
-      val left = Polynomial(Array(a, 1)).pow(n) // (x+a)^n
+      val left = Polynomial(Array(a, 1)).pow(n) // (x+a)^n // optimize!
       val right = Polynomial((a +: Seq.fill(n-1)(0) :+ 1).toArray) // (x^n + a)
       if(left.remainder(divider).mod(n).subtract(right.remainder(divider)) != Polynomial(Array(0))) {
         Logger.info("Poly test says: composite!")
