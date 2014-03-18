@@ -31,10 +31,11 @@ object Testing {
     def calcRunTime(primeTester: Int => Outcome, runs: Int) : Map[Int, (Double, Double)] = {
       // Can you do this better? Create a Map with the input to the results.
       (logInput zip logInput
-      .map(timeAlgo( _, primeTester, runs))
-      .map {
-          (runTimes) => (mean(runTimes), sample_stddev(runTimes))
-      }).toMap
+        .map(timeAlgo( _, primeTester, runs))
+        .map {
+            (runTimes) => (mean(runTimes), sample_stddev(runTimes))
+        }
+      ).toMap
     }
 
     val runs = 100
@@ -58,7 +59,7 @@ object Testing {
   }
 
   /**
-   * Create a list of Composite numbers, that are not even.
+   * Create a list of Composite numbers that are not even.
    */
   def numbers = {
     val lines = Source.fromFile("src/main/resources/primesBelow1000.txt").getLines()
