@@ -1,3 +1,5 @@
+import java.io.{File, PrintWriter}
+import randomized.AKS
 import randomized.Primality._
 import scala.io.Source
 
@@ -18,8 +20,13 @@ object Testing {
     println(s"Miller times Prime: mean ${millerResults._1}, stddev ${millerResults._2}")
   }
 
-  def runTimeTest = {
-    val logInput = for(i <- 0.5 to 6.0 by 0.1) yield Math.round(Math.pow(10, i)).toInt // They need to be whole numbers
+  def runTimeTest() = {
+    val logInput = for(i <- 0.5 to 6.0 by 0.1) yield {
+      val result = Math.round(Math.pow(10, i)).toInt  // They need to be whole numbers
+      // Make sure they are not even.
+      if( result%2 == 0 ) result+1
+      else result
+    }
 
     def calcRunTime(primeTester: Int => Outcome, runs: Int) : Map[Int, (Double, Double)] = {
       // Can you do this better? Create a Map with the input to the results.
@@ -36,6 +43,18 @@ object Testing {
     println(s"Solovay runTimes: $solovayResults")
     val millerResults = calcRunTime(millerRabinTest _, runs)
     println(s"Miller runTimes: $millerResults")
+//    val aksResults = calcRunTime(AKS.apply _, runs)
+//    println(s"AKS runTimes: $aksResults")
+
+
+    // Write results to CSV
+    val resultWriter = new PrintWriter(new File("src/main/resources/runtimeResults.csv"))
+    resultWriter.println("input,solovay mean,solovay stddev,miller mean, miller stddev")
+    for(input <- logInput) {
+      val resultLine = input :: solovayResults(input).productIterator.toList ::: millerResults(input).productIterator.toList
+      resultWriter.println(resultLine.mkString(","))
+    }
+    resultWriter.close()
   }
 
   /**
@@ -63,6 +82,11 @@ object Testing {
     )
   }
 
+  /**
+   * Checks how often an algorithm returns probablyPrime as opposed to Composite.
+   *
+   * This is not suitable for testing AKS, because it does not have an error (it return either Composite or Prime).
+   */
   def outcomesAlgo(input: Int, algo: Int => Outcome, times : Int) : Int = {
     (for(i <- 1 to times) yield {
       algo(input)
@@ -71,7 +95,10 @@ object Testing {
       case (primeTimes, _) => primeTimes
     }
   }
-  
+
+  /**
+   * Returns the runtimes in nanoseconds of the algorithm for the given input, tested times number.
+   */
   def timeAlgo(input: Int, algo: Int => Outcome, times: Int) : Seq[Long] = {
     for(i <- 1 to times) yield {
       val startTime = System.nanoTime
