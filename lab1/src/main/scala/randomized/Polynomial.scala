@@ -42,6 +42,21 @@ class Polynomial(c: Array[BigInt]) {
   }
 
   /**
+   * Exponential by squaring (O(log(n)) runtime
+   * With modulo mod every iteration
+   */
+  def pow_mod(n: Int, mod: Int ): Polynomial = {
+    assert(n>0, "negative powers are not supported")
+
+    n match {
+      case 0 => Polynomial(Array(BigInt(0)))
+      case 1 => this
+      case _ if n % 2 == 0 => this.multiply(this).mod(mod).pow_mod(n/2, mod)
+      case _ => this.multiply(this.multiply(this).mod(mod).pow_mod((n-1)/2, mod))
+    }
+  }
+
+  /**
    * Polynomial multiplication
    *
    * Implementation mirrors org.apache.commons.math3.analysis.polynomials
