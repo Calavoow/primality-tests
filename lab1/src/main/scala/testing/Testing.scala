@@ -1,4 +1,5 @@
 import java.io.{File, PrintWriter}
+import randomized.AKS
 import randomized.Primality._
 import scala.io.Source
 
@@ -15,22 +16,20 @@ object Testing {
   }
 
   def accuracyTest() = {
-    def calcAccuracy(primeTester: Int => Outcome, runs: Int) = {
-      val results = composites.map {
-        (number) => outcomesAlgo(number, primeTester, runs)
-      }
+    val runs = 1000
+    println(s"Testing accuracy $runs times for all ${composites.size} composite numbers between 3 and 7919")
+    val solovayResults = outcomesAlgo(solovayStrassenTest, runs)
+    val millerResults = outcomesAlgo(millerRabinTest, runs)
 
-      (mean(results), sample_stddev(results))
-    }
+    // Write results to CSV
+    val resultWriter = new PrintWriter(new File("src/main/resources/accuracyResults.csv"))
 
-    val runs = 100
-    println(s"Testing accuracy $runs times for all composite numbers between 3 and 7919")
+    resultWriter.println("solovay primes, miller primes")
+    (solovayResults zip millerResults).map{
+      (tuple) => tuple.productIterator.mkString(",")
+    }.foreach( resultWriter.println )
 
-    val solovayResults = calcAccuracy(solovayStrassenTest, runs)
-    println(s"Solovay times Prime: mean ${solovayResults._1}, stddev ${solovayResults._2}")
-
-    val millerResults = calcAccuracy(millerRabinTest, runs)
-    println(s"Miller times Prime: mean ${millerResults._1}, stddev ${millerResults._2}")
+    resultWriter.close()
   }
 
   def runTimeTest() = {
@@ -57,15 +56,17 @@ object Testing {
     println(s"Solovay runTimes: $solovayResults")
     val millerResults = calcRunTime(millerRabinTest, runs)
     println(s"Miller runTimes: $millerResults")
-    //    val aksResults = calcRunTime(AKS.apply _, runs)
-    //    println(s"AKS runTimes: $aksResults")
+    val aksResults = calcRunTime(AKS.apply _, runs)
+    println(s"AKS runTimes: $aksResults")
 
 
     // Write results to CSV
     val resultWriter = new PrintWriter(new File("src/main/resources/runtimeResults.csv"))
-    resultWriter.println("input,solovay mean,solovay stddev,miller mean, miller stddev")
+    resultWriter.println("input,solovay mean,solovay stddev,miller mean, miller stddev,AKS mean, AKS stddev")
     for (input <- logInput) {
-      val resultLine = input :: solovayResults(input).productIterator.toList ::: millerResults(input).productIterator.toList
+      val resultLine = input :: solovayResults(input).productIterator.toList :::
+        millerResults(input).productIterator.toList :::
+        aksResults(input).productIterator.toList
       resultWriter.println(resultLine.mkString(","))
     }
     resultWriter.close()
@@ -89,12 +90,14 @@ object Testing {
    *
    * This is not suitable for testing AKS, because it does not have an error (it return either Composite or Prime).
    */
-  def outcomesAlgo(input: Int, algo: Int => Outcome, times: Int): Int = {
-    (for (i <- 1 to times) yield {
-      algo(input)
-    }).foldLeft(0) {
-      case (primeTimes, ProbablyPrime) => primeTimes + 1
-      case (primeTimes, _) => primeTimes
+  def outcomesAlgo(algo: Int => Outcome, times: Int): Seq[Int] = {
+    for (i <- 1 to times) yield {
+      composites
+        .map( algo )
+        .foldLeft(0) {
+          case (primeTimes, ProbablyPrime) => primeTimes + 1
+          case (primeTimes, _) => primeTimes
+        }
     }
   }
 
