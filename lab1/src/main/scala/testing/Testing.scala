@@ -93,10 +93,10 @@ object Testing {
   def outcomesAlgo(algo: Int => Outcome, times: Int): Seq[Int] = {
     for (i <- 1 to times) yield {
       composites
-        .map( algo )
-        .foldLeft(0) {
-          case (primeTimes, ProbablyPrime) => primeTimes + 1
-          case (primeTimes, _) => primeTimes
+        .map( algo ) // Run the algorithm on the composite numbers
+        .count{ //Count the number of times ProbablyPrime occured
+          case ProbablyPrime => true
+          case _ => false
         }
     }
   }

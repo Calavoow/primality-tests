@@ -5,7 +5,7 @@ object Main {
   import randomized._
 
   def main(args: Array[String]) {
-    Testing.accuracyTest
+    Testing.runTimeTest()
 //    for(i<- 4 to 1000) {
 //      val s = Primality.test(i, 2, solovayStrassenTest)
 //      val m = Primality.test(i, 2, millerRabinTest)
