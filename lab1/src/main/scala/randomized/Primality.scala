@@ -199,7 +199,7 @@ object Primality {
     else {
       val a = Random.nextInt(n-2) + 2 // random in range [2, n-2]
 
-      // factor n as 2^s*d
+      // factor n as 2^s+d
       val (s, d) = millerRabinFactors(n-1)
       var x = powMod(a, d, n).toInt
 

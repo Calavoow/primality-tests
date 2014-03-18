@@ -56,7 +56,7 @@ object Testing {
     println(s"Solovay runTimes: $solovayResults")
     val millerResults = calcRunTime(millerRabinTest, runs)
     println(s"Miller runTimes: $millerResults")
-    val aksResults = calcRunTime(AKS.apply _, runs)
+    val aksResults = calcRunTime(AKS.apply _, 1)
     println(s"AKS runTimes: $aksResults")
 
     // Write results to CSV
