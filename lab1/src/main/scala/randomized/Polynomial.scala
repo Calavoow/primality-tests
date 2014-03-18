@@ -21,9 +21,19 @@ class Polynomial(c: Array[BigInt]) {
 
   val coefs = c.reverse.dropWhile { c => c == BigInt(0) }.reverse
 
-  def pow(n: Int) = {
-    (1 until n).foldLeft(this) {
-      (r, _) => r.multiply(this)
+  /**
+   * Exponential by squaring (O(log(n)) runtime
+   * @param n
+   * @return
+   */
+  def pow(n: Int): Polynomial = {
+    assert(n>0, "negative powers are not supported")
+
+    n match {
+      case 0 => Polynomial(Array(BigInt(0)))
+      case 1 => this
+      case _ if n % 2 == 0 => this.multiply(this).pow(n/2)
+      case _ => this.multiply(this.multiply(this).pow((n-1)/2))
     }
   }
 
