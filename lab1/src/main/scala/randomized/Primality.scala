@@ -20,34 +20,38 @@ object AKS {
   import Primality._
 
   def apply(n: Int): Outcome = {
-    test_int_powers(n) match {
-      case Composite => Composite
-      case _ =>
-        val r = find_smallest_order(n)
-        Logger.debug(s"Found smallest order $r")
+    test_int_powers(n).getOrElse {
+      val r = find_smallest_order(n)
+      Logger.debug(s"Found smallest order $r")
 
-        test_smallest_order(n, r).getOrElse { // step 3 and 4
-          test_poly(n, r).getOrElse( // step 5
-            Prime // step 6
-          )
-        }
+      test_smallest_order(n, r).orElse({
+        // step 3 and 4
+        test_poly(n, r)
+      }).getOrElse({
+        // step 6
+        Prime
+      })
     }
   }
 
   def log2(n: Int): Double = Math.log(n)/Math.log(2)
 
   def test_smallest_order(n: Int, r: Int): Option[Outcome] = {
-    Range(r,1,-1).find { i =>
-      val d = gcd(i,n)
-      d > 1 && d < n
-    }.flatMap { _ =>  // If it found something, return Composite. Step 3
-      Logger.info("Smallest order test says: Composite!")
-      Some(Composite)
+    Range(r, 1, -1).find {
+      i =>
+        val d = gcd(i, n)
+        d > 1 && d < n
+    }.flatMap {
+      _ =>
+      // If it found something, return Composite. Step 3
+        Logger.info("Smallest order test says: Composite!")
+        Some(Composite)
     }.orElse {
-      if(n<r){ // Step 4. Should this be part of the smallest order test?
+      if (n < r) {
+        // Step 4. Should this be part of the smallest order test?
         Logger.info("Smallest order test says: prime!")
         Some(Prime)
-      } else { // If it hasn't found anything, return None
+      } else {
         None
       }
     }
@@ -104,22 +108,22 @@ object AKS {
    * @param n
    * @return
    */
-  def test_int_powers(n: Int): Outcome = {
+  def test_int_powers(n: Int): Option[Outcome] = {
     for(b <- 2 to log2(n).toInt) {
       val a = Math.pow(n, 1.0/b)
       if(a.isValidInt) {
         Logger.info("Int powers test says: composite!")
         Logger.debug(s"Found $a^$b == $n")
-        return Composite
+        return Some(Composite)
       }
     }
-    
-    ProbablyPrime
+
+    None
   }
 }
-  
 
 object Primality {
+
   sealed trait Outcome {
     /**
      * You might want to do multiple tests.
@@ -155,9 +159,10 @@ object Primality {
     Primality.ProbablyPrime
   }
 
+  def aksTest(n: Int): Outcome = AKS(n)
+
   /**
    * Using the Solovay-Strassen algorithm, try to find out whether n is a Prime or a Composite.
-   *
    */
   def solovayStrassenTest(n : Int) : Outcome = {
     if(n % 2 == 0) Composite
