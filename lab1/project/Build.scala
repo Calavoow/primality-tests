@@ -9,8 +9,9 @@ object BroadcastOrderingBuild extends Build {
 		version := "0.1",
 		scalaVersion := "2.10.3",
     	libraryDependencies ++= Seq(
-      	  "org.scalatest" % "scalatest_2.10" % "2.1.0" % "test"
-    	)
+      	  "org.scalatest" % "scalatest_2.10" % "2.1.0" % "test",
+          "org.apache.commons" % "commons-math3" % "3.0"
+      )
 	)
 
   lazy val node = Project(

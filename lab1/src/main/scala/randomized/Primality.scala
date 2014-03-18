@@ -2,26 +2,97 @@ package randomized
 
 import scala.util.Random
 import scala.annotation.tailrec
+import org.apache.commons.math3.analysis.polynomials.{PolynomialFunction => Poly}
+import scala.collection.mutable
+
+object Logger {
+  val INFO = 0
+  val DEBUG = 1
+
+  val level = DEBUG
+
+  def info(s: String) = if(level>=INFO) println(s)
+  def debug(s: String) = if(level>=DEBUG) println(s)
+}
 
 object AKS {
 
-  import Primality.{Outcome, Prime, ProbablyPrime, Composite, powMod, gcd}
+  import Primality._
+
+  object Polynomial{
+    def apply(c: Double, exp: Int): Poly = {
+      val coefs = Array.fill[Double](exp+1)(0)
+      coefs(exp) = c
+
+      new Poly(coefs)
+    }
+  }
+
+  implicit class Polynomial(p: Poly) {
+    def pow(n: Int) = {
+      (1 until n).foldLeft(p) {(r, _) => r.multiply(p)}
+    }
+
+    /**
+     * Termwise modulo
+     */
+    def mod(n: Int) = new Poly(p.getCoefficients.map { c => c % n })
+
+    def remainder(that: Poly): Poly = {
+      val diff = p.degree() - that.degree()
+      if(diff < 0) p
+      else {
+        val bla = Polynomial(p.getCoefficients()(p.degree())/that.getCoefficients()(that.degree()), diff)
+        val divisor = that.multiply(bla)
+        p.subtract(divisor).remainder(that)
+      }
+    }
+  }
+
+  def apply(n: Int): Outcome = {
+    test_int_powers(n) match {
+      case Composite => Composite
+      case _ =>
+        val r = find_smallest_order(n)
+        Logger.debug(s"Found smallest order $r")
+
+        test_smallest_order(n, r) & // step 3 and 4
+          test_poly(n, r) & // step 5
+          Prime // step 6
+    }
+  }
 
   def log2(n: Int): Double = Math.log(n)/Math.log(2)
 
-  def apply(n: Int): Outcome = {
-    test_int_powers(n) &
-    test_smallest_order(n)
-  }
-
-  def test_smallest_order(n: Int): Outcome = {
-    val r = find_smallest_order(n)
+  def test_smallest_order(n: Int, r: Int): Outcome = {
     for(i <- Range(r,1,-1)) {
       val d = gcd(r,n)
-      if(d > 1 && d < n) return Composite
+      if(d > 1 && d < n) {
+        Logger.info("Smallest order test says: composite!")
+        return Composite
+      }
     }
 
-    if(n<r) return Prime
+    if(n<r) {
+      Logger.info("Smallest order test says: prime!")
+      return Prime
+    }
+
+    ProbablyPrime
+  }
+
+  def test_poly(n: Int, r: Int): Outcome = {
+    val max = (Math.sqrt(totient(r)) * log2(n)).toInt
+    val divider = new Poly((1.0 +: Seq.fill(r-1)(0.0) :+ -1.0).toArray[Double])
+
+    for(a <- 1 until max) {
+      val left = new Poly(Array(1.0, a)).pow(n) // (x+a)^n
+      val right = new Poly((1.0 +: Seq.fill(n-2)(0.0) :+ a.toDouble).toArray[Double]) // (x^n + a)
+      if(left.remainder(divider).mod(n).subtract(right.remainder(divider)) != new Poly(Array(0.0))) {
+        Logger.info("Poly test says: composite!")
+        return Composite
+      }
+    }
 
     ProbablyPrime
   }
@@ -32,8 +103,7 @@ object AKS {
 
   def find_smallest_order(n: Int): Int = {
     def find_r(r: Int): Int = {
-      val order = multiplicative_order(n, r)
-      if(order > Math.pow(log2(n), 2).toInt) r
+      if(gcd(n,r) == 1 && multiplicative_order(n, r) > Math.pow(log2(n), 2).toInt) r
       else find_r(r+1)
     }
 
@@ -44,6 +114,8 @@ object AKS {
    * TODO guard against infinite looping with maxk
    */
   def multiplicative_order(n: Int, r: Int): Int = {
+    assert(gcd(n,r) == 1, "Multiplicative order is only defined if gcd(n,r) == 1")
+
     @tailrec
     def calc(k: Int): Int = {
       val done = powMod(n, k, r).toInt
@@ -60,8 +132,13 @@ object AKS {
    * @return
    */
   def test_int_powers(n: Int): Outcome = {
-    for(b <- Range(2, log2(n).toInt)) {
-      if(Math.pow(n, 1/b).isValidInt) return Composite
+    for(b <- 2 to log2(n).toInt) {
+      val a = Math.pow(n, 1.0/b)
+      if(a.isValidInt) {
+        Logger.info("Int powers test says: composite!")
+        Logger.debug(s"Found $a^$b == $n")
+        return Composite
+      }
     }
     
     ProbablyPrime
