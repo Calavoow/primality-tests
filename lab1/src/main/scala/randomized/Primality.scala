@@ -56,32 +56,34 @@ object AKS {
         val r = find_smallest_order(n)
         Logger.debug(s"Found smallest order $r")
 
-        test_smallest_order(n, r) & // step 3 and 4
-          test_poly(n, r) & // step 5
-          Prime // step 6
+        test_smallest_order(n, r).getOrElse { // step 3 and 4
+          test_poly(n, r).getOrElse( // step 5
+            Prime // step 6
+          )
+        }
     }
   }
 
   def log2(n: Int): Double = Math.log(n)/Math.log(2)
 
-  def test_smallest_order(n: Int, r: Int): Outcome = {
+  def test_smallest_order(n: Int, r: Int): Option[Outcome] = {
     for(i <- Range(r,1,-1)) {
       val d = gcd(r,n)
       if(d > 1 && d < n) {
         Logger.info("Smallest order test says: composite!")
-        return Composite
+        return Some(Composite)
       }
     }
 
     if(n<r) {
       Logger.info("Smallest order test says: prime!")
-      return Prime
+      return Some(Prime)
     }
 
-    ProbablyPrime
+    None // No outcome
   }
 
-  def test_poly(n: Int, r: Int): Outcome = {
+  def test_poly(n: Int, r: Int): Option[Outcome] = {
     val max = (Math.sqrt(totient(r)) * log2(n)).toInt
     val divider = new Poly((1.0 +: Seq.fill(r-1)(0.0) :+ -1.0).toArray[Double])
 
@@ -90,11 +92,11 @@ object AKS {
       val right = new Poly((1.0 +: Seq.fill(n-2)(0.0) :+ a.toDouble).toArray[Double]) // (x^n + a)
       if(left.remainder(divider).mod(n).subtract(right.remainder(divider)) != new Poly(Array(0.0))) {
         Logger.info("Poly test says: composite!")
-        return Composite
+        return Some(Composite)
       }
     }
 
-    ProbablyPrime
+    None
   }
 
   def totient(n: Int): Int = {
