@@ -1,5 +1,7 @@
 package randomized
 
+import scala.annotation.tailrec
+
 object Polynomial {
   def apply(coefs: Array[BigInt]): Polynomial = new Polynomial(coefs)
 
@@ -15,11 +17,13 @@ object Polynomial {
 
     Polynomial(coefs)
   }
+
+  val ZERO = BigInt(0)
 }
 
 class Polynomial(c: Array[BigInt]) {
 
-  val coefs = c.reverse.dropWhile { c => c == BigInt(0) }.reverse
+  val coefs = c.take(c.lastIndexWhere({ _ != Polynomial.ZERO })+1)
 
   /**
    * Exponential by squaring (O(log(n)) runtime
@@ -52,7 +56,7 @@ class Polynomial(c: Array[BigInt]) {
       newcoefs(i) += coefs(j) * that.coefs(i - j)
     }
 
-    new Polynomial(newcoefs.toArray)
+    new Polynomial(newcoefs)
   }
 
   /**
@@ -94,7 +98,8 @@ class Polynomial(c: Array[BigInt]) {
   /**
    * Polynomial long division
    */
-  def remainder(that: Polynomial): Polynomial = {
+  @tailrec
+  final def remainder(that: Polynomial): Polynomial = {
     val diff = this.degree - that.degree
     if (diff < 0) this
     else {
