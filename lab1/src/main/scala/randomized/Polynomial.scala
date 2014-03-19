@@ -3,56 +3,32 @@ package randomized
 import scala.annotation.tailrec
 
 object Polynomial {
-  def apply(coefs: Array[BigInt]): Polynomial = new Polynomial(coefs)
+  def apply(coefs: Array[Long]): Polynomial = new Polynomial(coefs)
 
-  def apply(coefs: Array[Int]): Polynomial = {
-    Polynomial(coefs.map {
-      e => BigInt(e)
-    })
-  }
-
-  def apply(c: BigInt, exp: Int): Polynomial = {
-    val coefs = Array.fill(exp + 1)(BigInt(0))
+  def apply(c: Long, exp: Int): Polynomial = {
+    val coefs = Array.fill(exp + 1)(0L)
     coefs(exp) = c
 
     Polynomial(coefs)
   }
-
-  val ZERO = BigInt(0)
 }
 
-class Polynomial(c: Array[BigInt]) {
+class Polynomial(c: Array[Long]) {
 
-  val coefs = c.take(c.lastIndexWhere({ _ != Polynomial.ZERO })+1)
-
-  /**
-   * Exponential by squaring (O(log(n)) runtime
-   * @param n
-   * @return
-   */
-  def pow(n: Int): Polynomial = {
-    assert(n>0, "negative powers are not supported")
-
-    n match {
-      case 0 => Polynomial(Array(BigInt(0)))
-      case 1 => this
-      case _ if n % 2 == 0 => this.multiply(this).pow(n/2)
-      case _ => this.multiply(this.multiply(this).pow((n-1)/2))
-    }
-  }
+  val coefs = c.take(c.lastIndexWhere({ _ != 0 })+1)
 
   /**
    * Exponential by squaring (O(log(n)) runtime
    * With modulo mod every iteration
    */
-  def pow_mod(n: Int, mod: Int ): Polynomial = {
+  def pow_mod(n: Long, mod: Int): Polynomial = {
     assert(n>0, "negative powers are not supported")
 
     n match {
-      case 0 => Polynomial(Array(BigInt(0)))
+      case 0 => Polynomial(Array(0))
       case 1 => this
-      case _ if n % 2 == 0 => this.multiply(this).mod(mod).pow_mod(n/2, mod)
-      case _ => this.multiply(this.multiply(this).mod(mod).pow_mod((n-1)/2, mod))
+      case _ if n % 2 == 0 => this.multiply(this, mod).pow_mod(n/2, mod)
+      case _ => this.multiply(this.multiply(this, mod).pow_mod((n-1)/2, mod), mod)
     }
   }
 
@@ -61,14 +37,14 @@ class Polynomial(c: Array[BigInt]) {
    *
    * Implementation mirrors org.apache.commons.math3.analysis.polynomials
    */
-  def multiply(that: Polynomial) = {
-    val newcoefs = Array.fill(coefs.length + that.coefs.length - 1)(BigInt(0))
+  def multiply(that: Polynomial, mod: Long) = {
+    val newcoefs = Array.fill(coefs.length + that.coefs.length - 1)(0L)
 
     for (
       i <- 0 until newcoefs.length;
       j <- Math.max(0, i + 1 - that.coefs.length) until Math.min(coefs.length, i + 1)
     ) {
-      newcoefs(i) += coefs(j) * that.coefs(i - j)
+      newcoefs(i) = (newcoefs(i) + (coefs(j) * that.coefs(i - j)) % mod) % mod
     }
 
     new Polynomial(newcoefs)
@@ -83,7 +59,7 @@ class Polynomial(c: Array[BigInt]) {
     val lowlength = Math.min(coefs.length, that.coefs.length)
     val highlength = Math.max(coefs.length, that.coefs.length)
 
-    val newcoefs = Array.fill(highlength)(BigInt(0))
+    val newcoefs = Array.fill(highlength)(0L)
     for (i <- 0 until lowlength) {
       newcoefs(i) = coefs(i) - that.coefs(i)
     }
@@ -104,28 +80,15 @@ class Polynomial(c: Array[BigInt]) {
   /**
    * Termwise modulo
    */
-  def mod(n: Int) = new Polynomial(this.coefs.map {
+  def mod(n: Long) = new Polynomial(this.coefs.map {
     c => c % n
   })
 
   def degree = this.coefs.length - 1
 
-  /**
-   * Polynomial long division
-   */
-  @tailrec
-  final def remainder(that: Polynomial): Polynomial = {
-    val diff = this.degree - that.degree
-    if (diff < 0) this
-    else {
-      val divisor = that.multiply(Polynomial(coefs(this.degree) / that.coefs(that.degree), diff))
-      this.subtract(divisor).remainder(that)
-    }
-  }
-
   override def toString = {
     coefs.zipWithIndex.foldLeft("") {
-      case (r, (c, i)) if c != BigInt(0) => r + s" + $c x^$i"
+      case (r, (c, i)) if c != 0L => r + s" + $c x^$i"
       case (r, _) => r
     }
   }
