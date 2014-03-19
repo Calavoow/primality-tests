@@ -70,9 +70,9 @@ object AKS {
     val max = (Math.sqrt(totient(r)) * log2(n)).toInt
 
     for(a <- 1 until max) {
-      val left = Polynomial(Array(a, 1)).pow_mod(n,n) // (x+a)^n // optimize!
+      val left = Polynomial(Array(a, 1L)).pow_mod(n,n) // (x+a)^n // optimize!
       val right = Polynomial((a.toLong +: Seq.fill(n-1)(0L) :+ 1L).toArray) // (x^n + a)
-      if(remainder(left, r).mod(n).subtract(remainder(right, r)) != Polynomial(Array(0))) {
+      if(remainder(left, r).mod(n).subtract(remainder(right, r)) != Polynomial(Array(0L))) {
         Logger.info("Poly test says: composite!")
         return Some(Composite)
       }
