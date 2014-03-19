@@ -15,27 +15,24 @@ object Testing {
     i => i % 2 != 0 && !primes.contains(i)
   }
 
-  def sanityTest(test: Int => Outcome) = {
+  def sanityTest(test: Int => Outcome, runs: Int = 1) = {
     var faults = 0
     var errors = 0
     val tests = composites.length + primes.length
 
     for (i <- composites) {
-      val s = Primality.test(i, 2, solovayStrassenTest)
-      val m = Primality.test(i, 2, millerRabinTest)
-      (s, m) match {
-        case (ProbablyPrime, _) => faults+=1
-        case (_, ProbablyPrime) => faults+=1
-        case _ =>
+      val s = Primality.test(i, runs, test)
+      s match {
+        case ProbablyPrime => faults+=1
+        case Prime => errors+=1
+        case _ => println(s"$i: Check!")
       }
     }
     for (i <- primes) {
-      val s = Primality.test(i, 2, solovayStrassenTest)
-      val m = Primality.test(i, 2, millerRabinTest)
-      (s, m) match {
-        case (Composite, _) => print(s"Error: $i"); errors +=1
-        case (_, Composite) => print(s"Error: $i"); errors +=1
-        case _ =>
+      val s = Primality.test(i, runs, test)
+      s match {
+        case Composite => errors+=1
+        case _ => println(s"$i: Check!")
       }
     }
 
@@ -60,6 +57,38 @@ object Testing {
     }.foreach( resultWriter.println )
 
     resultWriter.close()
+  }
+
+  def compositesRuntimTest() = {
+    println("n, solovay mean, solovay stddev, miller-rabin mean, miller-rabin stddev, aks mean, aks stddev")
+    val nums = composites.zipWithIndex
+      .filter({ case (n, i) => i % (composites.length / 100).toInt == 0 })
+      .map { case (n, _) => n }
+
+    for (i <- nums) {
+      print(s"$i")
+      for ( test <- List(Primality.solovayStrassenTest _, Primality.millerRabinTest _, AKS.apply _)) {
+        val runtimes = timeAlgo(i, test, 10)
+        val mea = mean(runtimes)
+        val stddev = sample_stddev(runtimes)
+        print(s", $mea, $stddev")
+      }
+      println("")
+    }
+  }
+
+  def aksPrimesTest() = {
+    println("n, runtime mean, runtime stddev")
+
+    val nums = primes.zipWithIndex
+      .filter({ case (n, i) => i % (composites.length / 50).toInt == 0 })
+      .map { case (n, _) => n }
+
+    for (i <- nums) {
+      val runtimes = timeAlgo(i, AKS.apply, 2)
+      val (mea, stddev: Double) = (mean(runtimes), sample_stddev(runtimes))
+      println(s"$i, $mea, $stddev")
+    }
   }
 
   def runTimeTest() = {
@@ -135,7 +164,6 @@ object Testing {
    */
   def timeAlgo(input: Int, algo: Int => Outcome, times: Int): Seq[Long] = {
     for (i <- 1 to times) yield {
-      print(".")
       val startTime = System.nanoTime
       algo(input)
       System.nanoTime - startTime
