@@ -15,6 +15,36 @@ object Testing {
     i => i % 2 != 0 && !primes.contains(i)
   }
 
+  def sanityTest(test: Int => Outcome) = {
+    var faults = 0
+    var errors = 0
+    val tests = composites.length + primes.length
+
+    for (i <- composites) {
+      val s = Primality.test(i, 2, solovayStrassenTest)
+      val m = Primality.test(i, 2, millerRabinTest)
+      (s, m) match {
+        case (ProbablyPrime, _) => faults+=1
+        case (_, ProbablyPrime) => faults+=1
+        case _ =>
+      }
+    }
+    for (i <- primes) {
+      val s = Primality.test(i, 2, solovayStrassenTest)
+      val m = Primality.test(i, 2, millerRabinTest)
+      (s, m) match {
+        case (Composite, _) => print(s"Error: $i"); errors +=1
+        case (_, Composite) => print(s"Error: $i"); errors +=1
+        case _ =>
+      }
+    }
+
+    println("")
+    println("------------------------ REPORT ---------------------------")
+    println(s" Errors :: $errors/$tests")
+    println(s" Faults :: $faults/$tests")
+  }
+
   def accuracyTest() = {
     val runs = 1000
     println(s"Testing accuracy $runs times for all ${composites.size} composite numbers between 3 and 7919")
