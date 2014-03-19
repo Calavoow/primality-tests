@@ -256,15 +256,13 @@ object Primality {
    * @return The number raised to the power, with the given modulus.
    */
   def powMod(base: Double, pow: Double, mod: Int) : Double = {
-    @tailrec
-    def powMod(base: Double, pow: Double, mod: Int, accum: Double) : Double = {
-      pow match {
-        case 0 => accum
-        case _ => powMod(base, pow-1, mod, (base * accum) % mod)
-      }
+    pow match {
+      case _ if pow < 0 => powMod(1/base, -pow, mod)
+      case _ if pow == 0 => 1.0
+      case _ if pow == 1 => base
+      case _ if pow % 2 == 0 => powMod(base*base % mod, pow/2, mod)
+      case _ => base*powMod(base*base % mod, (pow-1)/2, mod) % mod
     }
-
-    powMod(base, pow, mod, 1)
   }
 
   /**

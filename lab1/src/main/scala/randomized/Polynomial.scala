@@ -25,7 +25,7 @@ class Polynomial(c: Array[Long]) {
     assert(n>0, "negative powers are not supported")
 
     n match {
-      case 0 => Polynomial(Array(0))
+      case 0 => Polynomial(Array(0L))
       case 1 => this
       case _ if n % 2 == 0 => this.multiply(this, mod).pow_mod(n/2, mod)
       case _ => this.multiply(this.multiply(this, mod).pow_mod((n-1)/2, mod), mod)
