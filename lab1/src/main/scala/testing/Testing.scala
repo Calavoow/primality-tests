@@ -1,5 +1,5 @@
 import java.io.{File, PrintWriter}
-import randomized.AKS
+import randomized.{Primality, AKS}
 import randomized.Primality._
 import scala.io.Source
 
